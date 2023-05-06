@@ -1,14 +1,48 @@
+import java.net.ConnectException;
+import java.net.Socket;
+import java.io.*;
+import java.rmi.Remote;
+
 public class Client {
 
+    private static Socket socket;
     /**
      * This method name and parameters must remain as-is
      */
     public static int add(int lhs, int rhs) {
-        return -1;
+        int num = 0;
+        try{
+            socket = new Socket("localhost", PORT);
+            RemoteInput method = new RemoteInput("add", new Object[]{lhs, rhs});
+            OutputStream output = socket.getOutputStream();
+            ObjectOutputStream outputObject = new ObjectOutputStream(output);
+            outputObject.writeObject(method);
+            InputStream input = socket.getInputStream();
+            ObjectInputStream objectInput = new ObjectInputStream(input);
+            RemoteInput rm = (RemoteInput) objectInput.readObject();
+            Object[] arr = rm.getArguments();
+            num = (int) arr[0];
+
+            socket.close();
+
+        }catch(IOException e){
+            System.err.println("IO issues: " + e.getMessage());
+            System.exit(1);
+        } catch(Exception e){
+            System.err.println("Failed to connect in general: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+
+        return num;
     }
     /**
      * This method name and parameters must remain as-is
      */
+
+
+
+
     public static int divide(int num, int denom) {
         return -1;
     }
