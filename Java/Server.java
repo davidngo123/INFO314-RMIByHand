@@ -9,10 +9,14 @@ public class Server {
     public static Socket socket;
     public static void main(String[] args){
         try {
-            ServerSocket server = new ServerSocket(10314);
-            while (true){
+            ServerSocket server = new ServerSocket(PORT);
+            boolean keepRunning = true;
+            while (keepRunning) {
                 socket = server.accept();
-
+                if(socket == null){
+                    keepRunning = false;
+                }
+                System.out.println("Server running on: " + PORT);
                 //instinate the stream objects
                 InputStream input = socket.getInputStream();
                 OutputStream output = socket.getOutputStream();
@@ -23,21 +27,32 @@ public class Server {
                 String method = remoteInput.getMethod();
                 Object[] ars = remoteInput.getArguments();
                 Object responseBack = null;
-                if(method.equals("add")){
+                if(method.equals("add")) {
                     responseBack = add((int) ars[0], (int) ars[1]);
+                } else if(method.equals("divide")){
+                    responseBack = divide((int) ars[0], (int) ars[1]);
+                } else if(method.equals("echo")){
+                    responseBack = echo((String) ars[0]);
+                } else {
+                    throw new IllegalArgumentException("Must be a valid method name");
                 }
-                RemoteInput serialize = new RemoteInput(method, new Object[]{responseBack});
+                RemoteInput serialize = new RemoteInput(method, new Object[]{
+                        responseBack});
 
+                //Close everything (make into util func?)
                 objectOutput.writeObject(serialize);
-
-                server.close();
-
-
+                objectOutput.flush();
+                objectOutput.close();
+                output.close();
+                input.close();
+                objectInput.close();
 
             }
+            server.close();
         } catch (Exception e){
             e.printStackTrace();
         }
+
     }
 
     // Do not modify any code below tihs line

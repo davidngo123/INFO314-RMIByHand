@@ -1,61 +1,121 @@
-import java.net.ConnectException;
-import java.net.Socket;
 import java.io.*;
-import java.rmi.Remote;
+import java.net.Socket;
 
 public class Client {
-
     private static Socket socket;
+    private static RemoteInput remote;
+    private static OutputStream output;
+    private static ObjectOutputStream outputObject;
+    private static InputStream input;
+    private static ObjectInputStream objectInput;
+
     /**
      * This method name and parameters must remain as-is
      */
     public static int add(int lhs, int rhs) {
-        int num = 0;
-        try{
-            socket = new Socket("localhost", PORT);
-            RemoteInput method = new RemoteInput("add", new Object[]{lhs, rhs});
-            OutputStream output = socket.getOutputStream();
-            ObjectOutputStream outputObject = new ObjectOutputStream(output);
-            outputObject.writeObject(method);
-            InputStream input = socket.getInputStream();
-            ObjectInputStream objectInput = new ObjectInputStream(input);
+        int answer = 0;
+        try {
+            remote = new RemoteInput("add", new Object[]{lhs, rhs});
+            start();
             RemoteInput rm = (RemoteInput) objectInput.readObject();
             Object[] arr = rm.getArguments();
-            num = (int) arr[0];
+            answer = (int) arr[0];
+            end();
 
-            socket.close();
 
-        }catch(IOException e){
-            System.err.println("IO issues: " + e.getMessage());
-            System.exit(1);
-        } catch(Exception e){
-            System.err.println("Failed to connect in general: " + e.getMessage());
-            e.printStackTrace();
+        } catch (IOException e) {
+            System.out.println("IO Exception error");
+        } catch (Exception e) {
+            System.out.println("Connection failed! Server refused to connect");
+        }
+        return answer;
+    }
+
+    /**
+     * This method name and parameters must remain as-is
+     */
+    public static int divide(int num, int denom){
+        if (denom == 0) {
+            throw new ArithmeticException();
+        }
+        int answer = 0;
+        try {
+            remote = new RemoteInput("divide", new Object[]{num, denom});
+            start();
+            RemoteInput rm = (RemoteInput) objectInput.readObject();
+            Object[] arr = rm.getArguments();
+            answer = (int) arr[0];
+            end();
+
+
+        } catch (IOException e) {
+            System.out.println("IO Exception error");
+        } catch (Exception e) {
+            System.out.println("Connection failed! Server refused to connect");
+        }
+        return answer;
+    }
+
+
+    private static void start(){
+        try {
+            socket = new Socket(server, PORT);
+            output = socket.getOutputStream();
+            outputObject = new ObjectOutputStream(output);
+            outputObject.writeObject(remote);
+            input = socket.getInputStream();
+            objectInput = new ObjectInputStream(input);
+        } catch (IOException e){
+            System.out.println("IO Exception error");
+        } catch (Exception e) {
+            System.out.println("Connection failed! Server refused to connect");
         }
 
 
-        return num;
+    }
+
+    private static void end(){
+        try {
+            socket.close();
+            input.close();
+            output.close();
+            outputObject.close();
+            objectInput.close();
+        } catch (IOException e){
+            System.out.println("IO Exception issue in client");
+        }
+
+
     }
     /**
      * This method name and parameters must remain as-is
      */
 
 
-
-
-    public static int divide(int num, int denom) {
-        return -1;
-    }
-    /**
-     * This method name and parameters must remain as-is
-     */
     public static String echo(String message) {
-        return "";
+        String echo = "";
+        try{
+            remote = new RemoteInput("echo", new Object[]{message});
+            start();
+            RemoteInput rm = (RemoteInput) objectInput.readObject();
+            Object[] arr = rm.getArguments();
+            echo = (String) arr[0];
+            end();
+        }
+        catch (IOException e) {
+            System.out.println("IO Exception error");
+        }
+
+        catch(Exception e) {
+
+            System.out.println("Connection failed!");
+        }
+        return echo;
     }
 
     // Do not modify any code below this line
     // --------------------------------------
-    String server = "localhost";
+    static String server = "localhost";
     public static final int PORT = 10314;
 
     public static void main(String... args) {
@@ -76,11 +136,11 @@ public class Client {
             System.out.print(".");
         }
 
-        if (echo("Hello").equals("You said Hello!"))
+        if (echo("Hello").equals( "You said Hello!"))
             System.out.print(".");
         else
             System.out.print("X");
-        
+
         System.out.println(" Finished");
     }
 }
